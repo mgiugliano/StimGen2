@@ -1,0 +1,56 @@
+---
+title: "StimGen 2"
+subtitle: "A compact, symbolic language for electrophysiological stimulus waveforms: concepts, semantics, and reference specification"
+author:
+  - Michele Giugliano
+date: "Draft — October 2026"
+abstract: |
+  We describe StimGen 2, a symbolic meta-description for the synthesis of
+  digital stimulus waveforms in electrophysiology. A waveform is written as a
+  short text, independent of its length, sampling rate, and D/A resolution, and
+  is converted into a sequence of samples only at the moment of use. We give
+  the language a precise mathematical meaning. We separate three layers (waveform, multichannel stimulus, and
+  protocol). We define the sampling of a continuous-time description, the
+  algebra by which waveforms are combined, and the statistical semantics of
+  stochastic components together with their reproducibility. Descriptions
+  are stored as plain text files with the extension `.sg`.
+
+documentclass: scrreprt
+classoption:
+  - open=any
+  - parskip=half
+papersize: a4
+fontsize: 11pt
+geometry:
+  - margin=2.5cm
+linkcolor: blue
+urlcolor: blue
+citecolor: blue
+toc: true
+toc-depth: 2
+numbersections: true
+top-level-division: chapter
+bibliography: references.bib
+link-citations: true
+
+# pandoc-crossref
+chapters: true
+chaptersDepth: 1
+eqnPrefix: ["Eq.", "Eqs."]
+secPrefix: ["Sec.", "Secs."]
+tblPrefix: ["Table", "Tables"]
+figPrefix: ["Fig.", "Figs."]
+linkReferences: true
+autoEqnLabels: false
+
+header-includes:
+  - \usepackage{mathtools}
+  - \usepackage{amssymb}
+  - \usepackage{booktabs}
+  - \providecommand{\llbracket}{\lBrack}
+  - \providecommand{\rrbracket}{\rBrack}
+  - \usepackage[most]{tcolorbox}
+  - \newtcolorbox{todobox}{colback=yellow!8,colframe=orange!70!black,title=Placeholder,fonttitle=\bfseries\small,fontupper=\small}
+  - \newtcolorbox{notebox}{colback=blue!4,colframe=blue!50!black,title=Note,fonttitle=\bfseries\small}
+  - \newtcolorbox{rationalebox}{colback=green!4,colframe=green!40!black,title=Design rationale,fonttitle=\bfseries\small}
+---

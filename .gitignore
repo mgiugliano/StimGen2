@@ -1,0 +1,16 @@
+# Build products (make, make docs)
+src/*.o
+src/sg
+docs/build/*
+!docs/build/stimgen2-spec.pdf
+!docs/build/sgb-access.pdf
+docs/figures/.stamp
+
+# Outputs of sg and of the tests
+*.sgb
+*_sgb/
+
+# Tooling
+__pycache__/
+node_modules/
+.DS_Store
