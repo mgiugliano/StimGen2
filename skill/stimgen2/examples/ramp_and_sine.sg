@@ -1,0 +1,5 @@
+# Hold, ramp up, oscillate on top of a level, ramp back (plain waveform)
+1s   dc(-50)
+2s   ramp(to=200)                     # 'from' defaults to prev = -50
+4s   dc(200) + sine(amp=50, freq=8Hz)
+1s   ramp(to=0)

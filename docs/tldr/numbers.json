@@ -1,0 +1,7 @@
+{
+ "fi_trials": 11,
+ "fi_rheobase_pA": 250.0,
+ "fi_rate_500": 99.5,
+ "reliability_per-condition": 0.7,
+ "reliability_per-trial": 0.03
+}

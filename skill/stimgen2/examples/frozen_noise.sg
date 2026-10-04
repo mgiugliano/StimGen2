@@ -1,0 +1,6 @@
+# The same OU realisation twice (seed=21), then a different one
+200ms ou(mean=100, sd=50, tau=5ms, seed=21)    # realisation A
+100ms dc(0)
+200ms ou(mean=100, sd=50, tau=5ms, seed=21)    # realisation A again
+100ms dc(0)
+200ms ou(mean=100, sd=50, tau=5ms)             # from the master seed

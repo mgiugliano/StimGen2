@@ -1,0 +1,16 @@
+sg 2 protocol
+# f-I curve: 11 amplitudes, 3 repetitions, shuffled within blocks, one every 4 s
+sweep  amp = from 0pA to 500pA step 50pA
+repeat 3
+order  shuffled-blocks
+period 4s
+seed   2026
+
+stimulus {
+    channel Iinj unit=pA {
+        500ms dc(0)
+        @step
+        2s    dc($amp)
+        500ms dc(0)
+    }
+}

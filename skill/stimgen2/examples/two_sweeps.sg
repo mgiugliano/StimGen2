@@ -1,0 +1,15 @@
+sg 2 protocol
+# Cartesian product of two sweeps (the first varies slowest) and a derived variable
+sweep  amp = [100pA, 200pA, 300pA]
+sweep  dur = [250ms, 500ms, 1s]
+let    q   = amp * dur                       # charge, recorded in each trial
+order  shuffled
+gap    2s
+
+stimulus {
+    channel Iinj unit=pA {
+        200ms dc(0)
+        $dur  dc($amp)
+        300ms dc(0)
+    }
+}

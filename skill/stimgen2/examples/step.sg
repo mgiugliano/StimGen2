@@ -1,0 +1,4 @@
+# A 300 pA step between two pauses (plain waveform; give the unit with -u pA)
+500ms dc(0)
+1s    dc(300)
+500ms dc(0)

@@ -1,0 +1,10 @@
+sg 2 protocol
+# Spike-time reliability: 10 repetitions of the same OU noise.
+# Change per-condition to per-trial for the control (a new realisation each trial).
+repeat 10
+noise  per-condition
+gap    1s
+
+stimulus {
+    channel Iinj unit=pA { 2s ou(mean=150, sd=100, tau=5ms) }
+}

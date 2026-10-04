@@ -6,7 +6,7 @@
 //   python3 make_slide_figures.py        # figures rendered by sg
 //   node build_deck.js                   # writes StimGen2-tutorial.pptx
 //
-// Needs the npm packages pptxgenjs, react, react-dom, react-icons, sharp.
+// Needs the npm packages pptxgenjs, react, react-dom, react-icons, sharp (and jszip, which comes with pptxgenjs).
 // SKILL_DIR may point to a directory with scripts/apply_theme.js (optional).
 
 const path = require("path");
@@ -539,6 +539,7 @@ async function build() {
     const { applyTheme } = require(path.join(skill, "scripts", "apply_theme.js"));
     await applyTheme(OUT, THEME);
   }
+  await require("./fix_ids.js").fixIds(OUT);   // pptxgenjs reuses shape id 25
   console.log("wrote", OUT);
 }
 

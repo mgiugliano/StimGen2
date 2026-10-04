@@ -43,9 +43,20 @@ PANDOC_OPTS := --from=markdown+tex_math_dollars+raw_tex+fenced_divs \
                --citeproc \
                --resource-path=.:figures
 
-.PHONY: all pdf html tex clean figures access
+.PHONY: all pdf html tex clean figures access tldr
 
-all: pdf access
+all: pdf access tldr
+
+# Five-page overview to read first: tldr/stimgen2-tldr.md.
+tldr: $(BUILD_DIR)/stimgen2-tldr.pdf
+
+tldr/.stamp: tldr/make_tldr_figures.py ../src/sg
+	python3 tldr/make_tldr_figures.py
+	touch $@
+
+$(BUILD_DIR)/stimgen2-tldr.pdf: tldr/stimgen2-tldr.md tldr/.stamp references.bib | $(BUILD_DIR)
+	cd tldr && pandoc --from=markdown --filter pandoc-crossref --citeproc \
+	    --pdf-engine=xelatex -o ../$@ stimgen2-tldr.md
 
 # Companion note: reading .sgb files from C, Python and Julia.
 access: $(BUILD_DIR)/sgb-access.pdf

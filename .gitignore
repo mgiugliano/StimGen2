@@ -4,7 +4,9 @@ src/sg
 docs/build/*
 !docs/build/stimgen2-spec.pdf
 !docs/build/sgb-access.pdf
+!docs/build/stimgen2-tldr.pdf
 docs/figures/.stamp
+docs/tldr/.stamp
 
 # Outputs of sg and of the tests
 *.sgb

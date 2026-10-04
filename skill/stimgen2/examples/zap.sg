@@ -1,0 +1,4 @@
+# Impedance profile: a 0.5-20 Hz chirp (ZAP), exponential sweep, with a taper
+1s   dc(0)
+{ 1s ramp(0, 1) ; 18s dc(1) ; 1s ramp(1, 0) } * chirp(amp=40, f0=0.5Hz, f1=20Hz, law=exp)
+1s   dc(0)

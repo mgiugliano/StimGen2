@@ -1,0 +1,2 @@
+# A Poisson train of EPSC-like currents on a holding level, frozen by seed
+2s dc(-20) + pulses(amp=-60, rate=15Hz, timing=poisson, shape=biexp, tau_rise=0.5ms, tau_decay=5ms, seed=7)

@@ -1,0 +1,13 @@
+sg 2 protocol
+# Values that go together: amplitude and duration as pairs, not a product
+sweep  (amp, dur) = [(400pA, 50ms), (200pA, 200ms), (100pA, 800ms)]
+repeat 5
+period 3s
+
+stimulus {
+    channel Iinj unit=pA {
+        500ms dc(0)
+        $dur  dc($amp)
+        1s    dc(0)
+    }
+}

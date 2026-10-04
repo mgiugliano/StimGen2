@@ -1,0 +1,13 @@
+sg 2 stimulus
+# Presynaptic train, postsynaptic hold, camera trigger, a marker
+rate 20kHz
+channel pre  unit=pA {
+    1s     dc(0)
+    @train                                       # marker pre.train
+    500ms  pulses(amp=2000, rate=20Hz, width=1ms)
+    1s     dc(0)
+}
+channel post unit=pA { 2.5s dc(-50) }
+channel gsyn unit=nS { 2.5s pos(ou(mean=5, sd=2, tau=3ms)) }
+digital cam  { 2.5s pulses(1, 50Hz, width=1ms) }
+marker flash at 1.2s

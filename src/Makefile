@@ -51,6 +51,8 @@ test: sg api_main
 	python3 ../tests/test_access.py ./sg
 	python3 ../tests/test_examples.py ./sg
 	python3 ../tests/test_api.py ./sg ./api_main
+	python3 ../tests/test_convert.py ./sg
+	python3 ../tests/test_skill.py ./sg
 
 # WebAssembly build for the web app (needs Emscripten's emcc; the result,
 # web/sg.js and web/sg.wasm, is committed, so the web app needs no compiler).

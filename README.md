@@ -15,12 +15,15 @@ record that allows every stimulus to be regenerated exactly.
 
 | Path | Content |
 |:--|:--|
+| `docs/tldr/` | **start here**: a five-page overview, the problem, the idea, two examples (`docs/build/stimgen2-tldr.pdf`) |
 | `docs/` | the specification and tutorial (Markdown, built with Pandoc into `docs/build/stimgen2-spec.pdf`) |
 | `docs/access/` | a short note on reading `.sgb` files from C, Python and Julia (`docs/build/sgb-access.pdf`) |
-| `docs/slides/` | a beginner's tutorial deck, `StimGen2-tutorial.pptx` (figures rendered by `sg`; `build_deck.js` rebuilds it) |
+| `docs/slides/` | two beginner's decks: `StimGen2-tutorial.pptx` (the language and `sg`; `build_deck.js`) and `StimGen2-planner-tutorial.pptx` (the web planner, step by step; `build_webapp_deck.js`, screenshots by `make_webapp_shots.mjs`) |
 | `src/` | `sg`, the command-line renderer (ISO C99, no dependencies), built on a small library (`sg_api.c`) |
 | `web/` | the StimGen 2 planner: a web app running the same C code as WebAssembly (`sg.wasm`), online at https://blog.giugliano.info/StimGen2/ |
 | `tools/sgplot.py` | a tiny Python reader and plotter for `.sgb` files |
+| `tools/sgconvert.py` | describes a `.sgb` file in words, or converts it to CSV, NPZ, MAT, HDF5, ATF (pClamp), NEURON or Brian 2 input |
+| `skill/stimgen2/` | an agent skill (plain Markdown and Python, not tied to one agent) that teaches an AI agent to write, check, render, describe, plot and convert StimGen 2 stimuli |
 | `tests/` | known-answer, reference, and conformance tests |
 | `docs/figures/make_figures.py` | renders every figure of the document with `sg` |
 
@@ -28,8 +31,8 @@ record that allows every stimulus to be regenerated exactly.
 
 ```
 make            # builds src/sg (any C99 compiler: cc, gcc, clang)
-make test       # self test + 45 reference tests + 120 conformance tests
-make docs       # figures and PDF (needs python3/matplotlib, pandoc, xelatex)
+make test       # self test, 45 reference + 120 conformance tests, converters, agent skill
+make docs       # figures and PDFs: spec, .sgb access note, TL;DR (needs python3/matplotlib, pandoc, xelatex)
 make wasm       # rebuild web/sg.wasm (needs Emscripten; the result is committed)
 make test-wasm  # WebAssembly vs native sg, and the planner in headless Chrome
 ```
@@ -77,6 +80,51 @@ and from Python:
 from sgplot import load
 h, t, x = load("pair.sgb")      # header (dict), time (s), samples[channel, k]
 ```
+
+## Describing and converting `.sgb` files
+
+`tools/sgconvert.py` needs only numpy (plus scipy for `mat`, h5py for `h5`):
+
+```
+python3 tools/sgconvert.py info  step.sgb        # in words: levels, frequencies, trial, seed, description
+python3 tools/sgconvert.py csv   step.sgb        # step.csv: time and one column per channel
+python3 tools/sgconvert.py npz   step.sgb        # numpy arrays t, x and the header
+python3 tools/sgconvert.py mat   step.sgb        # MATLAB
+python3 tools/sgconvert.py h5    step.sgb        # HDF5
+python3 tools/sgconvert.py atf   step.sgb        # Axon Text File, for pClamp
+python3 tools/sgconvert.py neuron step.sgb       # step_<channel>.dat for Vector.play (ms; nA, mV, uS)
+python3 tools/sgconvert.py brian step.sgb        # step.brian.npz for brian2.TimedArray
+python3 tools/sgconvert.py json  step.sgb        # the header
+```
+
+Every format keeps the seed and the description, so the provenance survives
+the conversion. In the author's laboratory, the rendered trials are played
+at the rig by Gecko, a separate command-line program that drives the
+National Instruments board. `sg` only renders: it does not play stimuli in
+real time.
+
+## The agent skill
+
+`skill/stimgen2/` packages what an AI agent needs to use StimGen 2: a
+`SKILL.md` entry point (YAML front matter and Markdown, readable by any agent
+that supports skills, or simply pasted into a prompt), references on the
+language, the command line and the `.sgb` format, the verbatim built-in help
+of `sg`, ten checked examples, and four scripts:
+
+```
+python3 skill/stimgen2/scripts/sg_run.py check fi.sg            # JSON: ok, message
+python3 skill/stimgen2/scripts/sg_run.py render -r 20kHz -s 1 fi.sg
+python3 skill/stimgen2/scripts/sgb_describe.py fi_sgb/          # one line per trial (or --json)
+python3 skill/stimgen2/scripts/sgb_plot.py fi_sgb/ -o fi.png    # trials overlaid (or --stack)
+python3 skill/stimgen2/scripts/sgconvert.py neuron fi_sgb/0003.sgb
+```
+
+`sg_run.py` finds `sg` through `$SG_BIN`, the PATH, or `src/sg` of a checkout,
+and builds it if needed. To install the skill, copy the folder where your
+agent looks for skills (for Claude Code: `~/.claude/skills/`). The verbatim
+help and the converter are generated from `sg` and `tools/`: run
+`python3 skill/build.py` after changing either. `make test` fails if they are
+out of date.
 
 ## The web planner
 
@@ -340,6 +388,8 @@ it is in the code. The section numbers refer to the specification.
 | `tests/compare_cli.py` | compares two builds of `sg` on 383 command lines (exit codes, stdout, stderr, every file written); used to prove that refactorings leave the command line unchanged |
 | `tests/test_api.py` | the library interface against the command line: identical `.sgb` files, errors, canonical forms, expansions and help (native, byte for byte); with `--level-b`, the WebAssembly build |
 | `tests/test_web.mjs` | the planner in headless Chrome: every example renders, errors mark their line, help inserts templates, browser samples equal native `sg` |
+| `tests/test_convert.py` | every `sgconvert` format read back and compared with the `.sgb` samples (HDF5 if h5py is installed) |
+| `tests/test_skill.py` | the agent skill: derived files up to date, every example and code block accepted by `sg`, the scripts on a stimulus and a protocol |
 | `tests/test_access.py` | extracts and runs every C, Python and Julia program of `docs/access/sgb-access.md`, and checks that all languages read the same values |
 | `docs/figures/make_figures.py` | renders every example figure of the document with `sg` |
 
