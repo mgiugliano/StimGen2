@@ -1,0 +1,233 @@
+<!doctype html>
+<!-- StimGen 2 -- SPDX-License-Identifier: MIT. Copyright (c) 2026 Michele Giugliano. See LICENSE. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StimGen 2 planner</title>
+<style>
+  :root {
+    --ink: #1B2A41; --teal: #0B7A75; --teal-2: #7FC8C2; --orange: #F26419; --muted: #5C6B7A;
+    --paper: #FFFFFF; --soft: #EEF4F3; --line: #D5E0DE; --err-bg: #FDECE4; --warn-bg: #FFF6DD;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Calibri, Arial, sans-serif; }
+  header { display: flex; align-items: center; gap: 4px; padding: 0 12px; height: 44px; background: var(--ink); color: #fff; }
+  header h1 { margin: 0 14px 0 0; font: 600 18px/1 Cambria, Georgia, serif; white-space: nowrap; }
+  header .ver { color: var(--teal-2); font-size: 12px; margin-left: auto; white-space: nowrap; }
+  /* menus */
+  .menu { position: relative; }
+  .menu > button { background: transparent; color: #fff; border: 0; padding: 6px 10px; border-radius: 6px; }
+  .menu > button:hover, .menu.open > button { background: #ffffff22; }
+  .menu .items { display: none; position: absolute; left: 0; top: 100%; min-width: 250px; background: #fff; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px #0003; padding: 4px; z-index: 20; }
+  .menu.open .items { display: block; }
+  .items button { display: flex; width: 100%; justify-content: space-between; gap: 16px; background: none; border: 0;
+    text-align: left; padding: 6px 10px; border-radius: 5px; }
+  .items button:hover:not(:disabled) { background: var(--soft); }
+  .items button kbd { color: var(--muted); font: 11px var(--mono); }
+  .items hr { border: 0; border-top: 1px solid var(--line); margin: 4px 6px; }
+  .items .grp { font-size: 11px; color: var(--muted); padding: 6px 10px 2px; }
+  #examplemenu { max-height: 75vh; overflow: auto; min-width: 340px; }
+  #keepseed { font-size: 12px; padding: 2px 6px; }
+  main { display: grid; grid-template-columns: minmax(340px, 44%) 6px 1fr; height: calc(100% - 44px); }
+  #split { cursor: col-resize; background: var(--line); }
+  #split:hover, #split.drag { background: var(--teal-2); }
+  body.resizing { cursor: col-resize; user-select: none; }
+  #left { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  #right { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 12px;
+    border-bottom: 1px solid var(--line); background: var(--soft); }
+  .bar label { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; }
+  input, select, button { font: inherit; font-size: 13px; padding: 3px 7px; border: 1px solid var(--line);
+    border-radius: 6px; background: #fff; color: var(--ink); }
+  input[type=text] { width: 6.5em; font-family: var(--mono); }
+  input[type=checkbox] { padding: 0; }
+  button { cursor: pointer; }
+  button.primary { background: var(--teal); color: #fff; border-color: var(--teal); }
+  button:disabled { opacity: .45; cursor: default; }
+  /* palette */
+  #palette { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 12px; border-bottom: 1px solid var(--line); }
+  #palette .grp { display: inline-flex; align-items: center; gap: 3px; }
+  #palette .grp > span { font-size: 11px; color: var(--muted); margin-right: 2px; }
+  #palette button { font: 12px var(--mono); padding: 2px 7px; color: var(--teal); border-color: #C9DEDB; }
+  #palette button:hover { background: var(--teal); color: #fff; }
+  /* editor */
+  #editwrap { position: relative; flex: 1; display: flex; min-height: 120px; font: 14px/20px var(--mono); }
+  #gutter { padding: 10px 6px 10px 10px; text-align: right; color: #9AA8B4; background: #F7FAF9;
+    border-right: 1px solid var(--line); user-select: none; overflow: hidden; min-width: 3.2em; white-space: pre; }
+  #gutter .bad { color: #fff; background: var(--orange); border-radius: 3px; padding: 0 3px; }
+  #gutter .sel { color: #fff; background: var(--teal); border-radius: 3px; padding: 0 3px; }
+  #editor { flex: 1; resize: none; border: 0; outline: 0; padding: 10px 12px; font: inherit; color: var(--ink);
+    white-space: pre; overflow: auto; tab-size: 4; background: #fff; }
+  /* builder */
+  #builder { display: none; border-top: 2px solid var(--teal); background: #FAFCFC; max-height: 52%; overflow: auto; }
+  #builder.open { display: block; }
+  #builder .title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px 0; font-size: 12px; color: var(--muted); }
+  #builder .title select { font-size: 12px; }
+  #builder .actions { display: flex; gap: 8px; padding: 8px 12px 10px; position: sticky; bottom: 0; background: #FAFCFC; }
+  #builder .preview { font: 12.5px var(--mono); color: var(--teal); padding: 4px 12px; word-break: break-all; }
+  .genform { padding: 4px 12px; }
+  .genform .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 3px 0; }
+  .genform .row.head { display: block; }
+  .genform .row.head b { font: 600 15px var(--mono); color: var(--teal); margin-right: 8px; }
+  .genform .help { color: var(--muted); font-size: 12px; }
+  .genform .row.head label { display: inline-flex; gap: 4px; align-items: center; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .genform .pname { font: 12.5px var(--mono); min-width: 7.5em; color: var(--ink); cursor: help; }
+  .genform .hint { font-size: 11.5px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; }
+  .genform input.num { width: 6em; }
+  .genform input.wide { width: 16em; }
+  .genform input.label { width: 10em; }
+  .genform .qty { display: inline-flex; gap: 2px; }
+  .genform details.more { margin: 4px 0 2px; }
+  .genform details.more summary { cursor: pointer; font-size: 12px; color: var(--teal); }
+  /* status */
+  #status { padding: 7px 12px; border-top: 1px solid var(--line); font-size: 13px; min-height: 34px; white-space: pre-wrap; }
+  #status.err { background: var(--err-bg); color: #8A2A0A; }
+  #status.warn { background: var(--warn-bg); }
+  #status.ok { color: var(--teal); }
+  #status.stale { background: #F3F6F6; color: var(--muted); }
+  /* plots */
+  #timeline { width: calc(100% - 24px); height: 26px; margin: 8px 12px 0; display: none; cursor: pointer; }
+  #plots { flex: 1; overflow: auto; padding: 4px 12px 16px; min-height: 0; }
+  #plots.stale { opacity: .3; }
+  .chan { position: relative; margin-bottom: 6px; }
+  .chan .name { position: absolute; left: 4px; top: 2px; font: 12px var(--mono); color: var(--muted); pointer-events: none; }
+  .chan canvas { width: 100%; height: 170px; display: block; cursor: crosshair; }
+  .chan .zoombox { position: absolute; display: none; background: #F2641922; border: 1px dashed var(--orange); pointer-events: none; }
+  #readout { font: 12px var(--mono); color: var(--muted); padding: 0 12px 6px; min-height: 18px; }
+  #trialbar { display: none; }
+  #trialbar input[type=text] { width: 3.5em; }
+  #playbar input[type=text] { width: 4em; }
+  #play { min-width: 5.2em; font-weight: 600; }
+  #play.on { background: var(--orange); border-color: var(--orange); color: #fff; }
+  #playinfo { font: 12px var(--mono); color: var(--muted); }
+  #axes .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+  #axes input[type=text] { width: 4.6em; }
+  #axes { gap: 4px 6px; }
+  /* help, dialog, drop */
+  #help { position: fixed; right: 0; top: 44px; bottom: 0; width: min(720px, 96vw); background: #fff;
+    border-left: 1px solid var(--line); box-shadow: -4px 0 16px #0002; display: none; flex-direction: column; z-index: 15; }
+  #help.open { display: flex; }
+  #help .list { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  #help .list button { font: 12px var(--mono); padding: 2px 6px; }
+  #help pre { flex: 1; margin: 0; padding: 12px; overflow: auto; font: 12px/1.45 var(--mono); white-space: pre; }
+  #help .tools { padding: 8px 12px; border-top: 1px solid var(--line); display: flex; gap: 8px; }
+  dialog { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; min-width: 340px; box-shadow: 0 12px 32px #0004; }
+  dialog h3 { margin: 0 0 6px; font: 600 16px Cambria, Georgia, serif; }
+  dialog p { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+  dialog .fields label { display: flex; justify-content: space-between; gap: 10px; margin: 6px 0; font-size: 13px; }
+  dialog .fields input[type=text] { width: 16em; }
+  dialog .btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+  #drop { position: fixed; inset: 0; background: #0B7A75cc; color: #fff; display: none; align-items: center;
+    justify-content: center; font-size: 22px; z-index: 30; }
+  #files { font-size: 12px; color: var(--muted); }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr !important; grid-template-rows: 55% 45%; } #split { display: none; } header .ver { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>StimGen 2 planner</h1>
+  <div class="menu"><button>File</button><div class="items">
+    <button data-act="new">New</button>
+    <button data-act="open">Open .sg file…</button>
+    <hr>
+    <button data-act="save-sg">Save .sg</button>
+    <button data-act="save-sgb">Save .sgb (rendered samples)</button>
+  </div></div>
+  <div class="menu"><button>Edit</button><div class="items">
+    <button data-act="edit-line">Edit the segment at the cursor…</button>
+    <hr>
+    <button data-act="repeat">Repeat the selected lines…</button>
+    <button data-act="combine">Combine the selection with a generator…</button>
+    <button data-act="marker">Add a marker before this line…</button>
+    <button data-act="comment">Comment / uncomment lines <kbd>⌘/</kbd></button>
+  </div></div>
+  <div class="menu"><button>Insert</button><div class="items" id="insertmenu"></div></div>
+  <div class="menu"><button>Make</button><div class="items">
+    <button data-act="to-stimulus">Waveform → stimulus (named channel)</button>
+    <button data-act="add-channel">Add a channel…</button>
+    <button data-act="sweep">Sweep the selected value (protocol)…</button>
+  </div></div>
+  <div class="menu"><button>Examples</button><div class="items" id="examplemenu"></div></div>
+  <div class="menu"><button>Help</button><div class="items">
+    <button data-act="help">Generators and topics…</button>
+    <button data-act="help-syntax">How a description is written</button>
+    <button data-act="about">About</button>
+  </div></div>
+  <span class="ver" id="ver">loading…</span>
+</header>
+<main>
+  <section id="left">
+    <div class="bar">
+      <label>rate <input id="rate" type="text" value="20kHz" title="Sampling rate (ignored if the text states one)"></label>
+      <label>seed <input id="seed" type="text" value="" placeholder="none"
+        title="Master seed (like sg -s). Empty: a new realisation at every rendering, unless the text states a seed"></label>
+      <button id="keepseed" title="Keep the seed of the noise shown, so that it stays the same">keep</button>
+      <label>unit <select id="unit"><option>pA</option><option>nA</option><option>mV</option><option>nS</option><option value="">none</option></select></label>
+      <span style="margin-left:auto"></span>
+      <label title="Re-render while typing"><input type="checkbox" id="live" checked> live</label>
+      <button id="plotbtn" class="primary" title="Render and plot now (⌘/Ctrl+Enter)">Plot ⟳</button>
+    </div>
+    <div id="palette" title="Add a segment: choose a generator"></div>
+    <div id="editwrap"><div id="gutter">1</div><textarea id="editor" spellcheck="false" autocomplete="off"></textarea></div>
+    <div id="builder">
+      <div class="title"><span id="bmode">New segment</span>
+        <span id="bop" style="display:none">operation <select id="opsel"><option value="*">× multiply</option><option value="+">+ add</option><option value="-">− subtract</option><option value="/">÷ divide</option></select></span>
+        <span style="margin-left:auto">generator <select id="bgen"></select></span></div>
+      <div id="bform"></div>
+      <div class="preview" id="bpreview"></div>
+      <div class="actions"><button class="primary" id="bapply">Insert</button><button id="bcancel">Cancel</button></div>
+    </div>
+    <div id="status">Loading the renderer…</div>
+    <div class="bar">
+      <button id="dl-sg">Save .sg</button>
+      <button id="dl-sgb" class="primary" disabled>Save .sgb</button>
+      <span id="files" title="Drop files here for use and file()">drop files for use / file()</span>
+    </div>
+  </section>
+  <div id="split" title="Drag to resize the two sides"></div>
+  <section id="right">
+    <div class="bar" id="trialbar">
+      <label>trial <select id="trial"></select></label>
+      <label>show <select id="tview" title="How many trials to plot">
+        <option value="one">this trial</option><option value="overlay" selected>overlay</option><option value="stack">stack</option></select></label>
+      <label>trials <input type="text" id="tcount" value="8" title="Number of trials shown, from the selected one"></label>
+      <span id="trialinfo" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+    <div class="bar" id="axes" title="Drag on a plot to zoom time; Shift+drag to zoom values; double-click to reset">
+      <label><input type="checkbox" id="xauto" checked> time auto</label>
+      <label>from <input type="text" id="x0"></label><label>to <input type="text" id="x1"></label><label>s</label>
+      <span class="sep"></span>
+      <label>values of <select id="ych"></select></label>
+      <label><input type="checkbox" id="yauto" checked> auto</label>
+      <label>min <input type="text" id="y0"></label><label>max <input type="text" id="y1"></label>
+      <button id="resetview" title="All axes automatic">Reset view</button>
+    </div>
+    <div class="bar" id="playbar">
+      <button id="play" title="Animate: a cursor plays the stimulus; trials follow one another">▶ Play</button>
+      <label>speed <select id="speed"><option value="0.25">¼×</option><option value="0.5">½×</option>
+        <option value="1" selected>1×</option><option value="2">2×</option><option value="5">5×</option><option value="20">20×</option></select></label>
+      <label>interval <input type="text" id="interval" value="1" title="Time between trials (stimulus time; from the protocol when it states one)"> s</label>
+      <label><input type="checkbox" id="loop" checked> loop</label>
+      <span id="playinfo"></span>
+    </div>
+    <canvas id="timeline" title="Click a segment to edit it"></canvas>
+    <div id="plots"></div>
+    <div id="readout"></div>
+  </section>
+</main>
+<aside id="help">
+  <div class="list" id="primlist"></div>
+  <pre id="helptext"></pre>
+  <div class="tools"><button id="insert" disabled>Open in the segment builder</button><button id="closehelp">Close</button></div>
+</aside>
+<dialog id="dlg"><form method="dialog"><h3 id="dlgtitle"></h3><p id="dlgtext"></p><div class="fields" id="dlgfields"></div>
+  <div class="btns"><button value="cancel" formnovalidate>Cancel</button><button value="ok" class="primary" id="dlgok">OK</button></div></form></dialog>
+<input type="file" id="openfile" accept=".sg,.txt,text/plain" style="display:none">
+<div id="drop">Drop files: they become available to use "…" and file("…")</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

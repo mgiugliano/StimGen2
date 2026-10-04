@@ -14,3 +14,4 @@ docs/figures/.stamp
 __pycache__/
 node_modules/
 .DS_Store
+src/api_main

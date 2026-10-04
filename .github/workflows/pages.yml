@@ -20,35 +20,37 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# StimGen 2 -- top-level Makefile.
-#   make           build the renderer src/sg
-#   make test      run all tests (needs python3 with numpy)
-#   make wasm      rebuild web/sg.wasm (needs Emscripten)
-#   make test-wasm compare the WebAssembly build with the native sg (needs node)
-#   make figures   regenerate the figures of the document (needs matplotlib)
-#   make docs      build docs/build/stimgen2-spec.pdf and sgb-access.pdf
-#   make clean
+# Publish the StimGen 2 planner (web/) with GitHub Pages on every push to main.
+# web/ is static: sg.wasm and sg.js are committed (rebuilt with "make wasm"),
+# so nothing is compiled here.
+name: Pages
 
-all:
-	$(MAKE) -C src
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
 
-test: all
-	$(MAKE) -C src test
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
-wasm:
-	$(MAKE) -C src wasm
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
-test-wasm: all
-	$(MAKE) -C src test-wasm
-
-figures: all
-	$(MAKE) -C docs figures
-
-docs: all
-	$(MAKE) -C docs pdf access
-
-clean:
-	$(MAKE) -C src clean
-	$(MAKE) -C docs clean
-
-.PHONY: all test wasm test-wasm figures docs clean
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v4

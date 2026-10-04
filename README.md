@@ -18,7 +18,8 @@ record that allows every stimulus to be regenerated exactly.
 | `docs/` | the specification and tutorial (Markdown, built with Pandoc into `docs/build/stimgen2-spec.pdf`) |
 | `docs/access/` | a short note on reading `.sgb` files from C, Python and Julia (`docs/build/sgb-access.pdf`) |
 | `docs/slides/` | a beginner's tutorial deck, `StimGen2-tutorial.pptx` (figures rendered by `sg`; `build_deck.js` rebuilds it) |
-| `src/` | `sg`, the command-line renderer (ISO C99, no dependencies) |
+| `src/` | `sg`, the command-line renderer (ISO C99, no dependencies), built on a small library (`sg_api.c`) |
+| `web/` | the StimGen 2 planner: a web app running the same C code as WebAssembly (`sg.wasm`), online at https://blog.giugliano.info/StimGen2/ |
 | `tools/sgplot.py` | a tiny Python reader and plotter for `.sgb` files |
 | `tests/` | known-answer, reference, and conformance tests |
 | `docs/figures/make_figures.py` | renders every figure of the document with `sg` |
@@ -29,6 +30,8 @@ record that allows every stimulus to be regenerated exactly.
 make            # builds src/sg (any C99 compiler: cc, gcc, clang)
 make test       # self test + 45 reference tests + 120 conformance tests
 make docs       # figures and PDF (needs python3/matplotlib, pandoc, xelatex)
+make wasm       # rebuild web/sg.wasm (needs Emscripten; the result is committed)
+make test-wasm  # WebAssembly vs native sg, and the planner in headless Chrome
 ```
 
 The tests need Python 3 with numpy; plotting needs matplotlib.
@@ -74,6 +77,77 @@ and from Python:
 from sgplot import load
 h, t, x = load("pair.sgb")      # header (dict), time (s), samples[channel, k]
 ```
+
+## The web planner
+
+**Try it online: https://blog.giugliano.info/StimGen2/** (published from `web/`
+by `.github/workflows/pages.yml` on every push).
+
+`web/` is a planner that runs in any modern browser: type a description on
+the left, see it rendered on the right while you type. The text stays the
+single source of truth; around it, everything can also be done with the
+mouse, and every action writes ordinary StimGen 2 text:
+
+* **Generator palette and segment builder**: click a generator, fill in a
+  form (units chosen from menus, rarely used options folded away), watch the
+  plot preview the new segment, then Insert. Click a segment in the
+  **timeline** above the plot (or Edit → Edit the segment at the cursor) to
+  change it in the same form; its values are read back through sg's
+  canonical form.
+* **Menus**: File (new, open, save `.sg` and `.sgb`); Edit (repeat the
+  selected lines, combine them with a generator — multiply by an envelope,
+  add noise —, add a marker, comment lines); Insert; Make (waveform →
+  stimulus, add a channel, sweep a selected value to make a protocol);
+  Examples; Help (all `sg help` topics).
+* **Axes**: time and value ranges are automatic or fixed — type the limits,
+  drag on a plot to zoom time (Shift+drag for values), double-click to go
+  back to automatic. Fixed limits are kept while the text changes.
+* **Protocols**: pick any trial from the drop-down; show it alone, or
+  **overlay** or **stack** the next N trials (coloured by condition, the
+  selected one in bold, one value scale per channel).
+* **Animate**: ▶ Play moves a cursor through the stimulus at a chosen speed
+  (¼× to 20×), waits the inter-trial interval (taken from the protocol's
+  `period` or `gap`, editable), then goes on to the next trial; optionally
+  in a loop.
+* **Seeds, as in the specification**: the seed field is empty by default,
+  so noise without a seed is a new realisation at every rendering (Plot ⟳
+  draws again), and seeds written in the text are respected; the status line
+  says whether the seed shown was drawn, given or stated in the text. Type a
+  seed (like `sg -s`) or press **keep** to freeze the realisation shown.
+* **Examples**: 43 complete examples in the Examples menu, from a first step
+  to ZAP chirps, synaptic barrages, frozen-noise reliability, dynamic-clamp
+  conductances, paired-pulse and I–V protocols (`web/examples.js`; every one
+  is checked by the native `sg` in `tests/test_web.mjs`).
+* **Live or on demand**: with *live* on, the plot follows every keystroke;
+  with it off, the plot is marked out of date until **Plot ⟳**
+  (⌘/Ctrl+Enter) — handy for long stimuli and large protocols.
+* **Layout**: drag the divider between text and plots (double-click resets
+  it); the plots fill the available height. Markers, a readout under the
+  mouse, and dropped files for `use` and `file()` complete it. Nothing is uploaded: the renderer is `sg` itself, compiled to
+WebAssembly (`sg.wasm`, about 170 KB) and run in a background worker.
+
+```
+cd web && python3 -m http.server 8000      # then open http://localhost:8000
+```
+
+(Browsers load WebAssembly only from a web server, not from `file://`; the
+folder can also be published as is, e.g. with GitHub Pages.) `web/sglib.mjs`
+is a small JavaScript interface to the same functions, usable in other pages
+or in Node.
+
+**One code base.** The command line and the web app share the library:
+`render.c` (one stimulus from text to samples), `sgb.c`, `protocol.c` and the
+rest; `main.c` only reads the command line, and `sg_api.c` is the interface
+used by WebAssembly (render, check, canonical form, protocol expansion, help,
+and a JSON table of the generators). Errors inside the library return to the
+caller with the same message the command line prints.
+
+**Same results.** The web app produces the same `.sgb` files as `sg`: same
+header, same seeds, same canonical digest. Samples are bit-identical except
+where an elementary function (`sin`, `exp`, `log`, `pow`) of Emscripten's math
+library differs in its last bit from the native one; the differences stay
+within reproducibility Level B (largest observed: 6·10⁻¹⁵ of the amplitude,
+in a long exponential chirp).
 
 ## What `sg` implements
 
@@ -263,6 +337,9 @@ it is in the code. The section numbers refer to the specification.
 | `tests/run_tests.py` | 45 checks: every generator against closed forms, noise streams against an independent Python implementation, frozen noise, locality, repeat, stimuli, `.sgb` format, errors |
 | `tests/test_thorough.py` | 120 checks: randomised exact boundaries, canonical round trip on 138 random waveforms (the valid ones among 150; identical samples), all options, `prev` semantics, units, stimulus rules, regeneration from provenance, noise statistics, `-O0`/`-O2` identity, 24 error cases, and protocols: the four orders and trial seeds against an independent implementation, substitution, sweeps, noise policies, protocol = directory form (byte-identical), 10 protocol errors |
 | `tests/test_examples.py` | runs the 40 commands printed by `sg examples`, exactly as printed |
+| `tests/compare_cli.py` | compares two builds of `sg` on 383 command lines (exit codes, stdout, stderr, every file written); used to prove that refactorings leave the command line unchanged |
+| `tests/test_api.py` | the library interface against the command line: identical `.sgb` files, errors, canonical forms, expansions and help (native, byte for byte); with `--level-b`, the WebAssembly build |
+| `tests/test_web.mjs` | the planner in headless Chrome: every example renders, errors mark their line, help inserts templates, browser samples equal native `sg` |
 | `tests/test_access.py` | extracts and runs every C, Python and Julia program of `docs/access/sgb-access.md`, and checks that all languages read the same values |
 | `docs/figures/make_figures.py` | renders every example figure of the document with `sg` |
 

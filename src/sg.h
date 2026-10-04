@@ -36,13 +36,18 @@
  *   eval.c   static checks, sampling, algebra, stimuli   (spec Secs. 8,10,12)
  *   protocol.c  protocols, trials, directory form          (spec Sec. 13)
  *   sgb.c    .sgb output and provenance record            (spec Sec. 15)
- *   main.c   command line and help text
+ *   render.c one stimulus: parse, check, rate, seed, realise
+ *   util.c   errors, warnings, memory
+ *   help.c   built-in help texts
+ *   sg_api.c library interface (used by the WebAssembly build)
+ *   main.c   command line
  *
  * Language: ISO C99 (needed for exact 64-bit integers, uint64_t).
  */
 #ifndef SG_H
 #define SG_H
 
+#include <setjmp.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -52,7 +57,11 @@
 /* ------------------------------------------------------------------ */
 /* Errors: every error is fatal for a command-line tool.               */
 /* ------------------------------------------------------------------ */
-void die(const char *fmt, ...);               /* print "sg: error: ..." and exit(1)  */
+void die(const char *fmt, ...);               /* print "sg: error: ..." and exit(1),  */
+                                              /* or jump to a trap set by the library */
+void sg_set_trap(jmp_buf *jb);                /* NULL: no trap (command line)          */
+const char *sg_last_error(void);              /* message of the last trapped error     */
+extern int g_quiet;                           /* do not print warnings                 */
 void warn(const char *fmt, ...);              /* print and record a warning           */
 extern char *g_warnings;                      /* all warnings, as a JSON array body    */
 char *xstrdup(const char *s);
@@ -260,7 +269,41 @@ Trials *read_directory(const char *path, int have_seed, uint64_t seed);
 void    write_directory(const Trials *T, const char *outdir);
 const char *file_kind(const char *path, const char *text);  /* header kind */
 
+/* render.c: one stimulus from text to samples */
+typedef struct {                 /* settings, as given on the command line   */
+    const char *unit, *rate_s;   /* -u, -r (NULL if absent)                  */
+    int text, have_seed;         /* -t, -s given                             */
+    uint64_t seed;               /* -s                                       */
+} SgOpts;
+extern char *g_check_warnings;   /* warnings issued while checking           */
+Stimulus *render_stimulus(const char *name, const char *text, const char *dir, const SgOpts *o,
+                          int seed_fixed, uint64_t tseed, int check,
+                          double *fs_out, uint64_t *seed_out, char **canon_out);
+
+/* sg_api.c: library interface (see sg_api.c) */
+int sg_api_render(const char *text, const char *rate, const char *seed, const char *unit);
+int sg_api_render_trial(const char *text, const char *rate, const char *seed, const char *unit,
+                        const char *trial_json, const char *protocol_text);
+int sg_api_check(const char *text, const char *unit);
+int sg_api_canon(const char *text, const char *unit);
+int sg_api_kind(const char *text);
+int sg_api_expand(const char *text, const char *seed);
+int sg_api_help(const char *topic);
+int sg_api_prims(void);
+const char *sg_api_error(void);
+const char *sg_api_text(void);
+const char *sg_api_warnings(void);
+const uint8_t *sg_api_result(void);
+size_t sg_api_result_size(void);
+const char *sg_api_version(void);
+
+/* help.c */
+extern const char *sg_about, *sg_license;
+void sg_help(FILE *f, const char *topic);     /* a help topic (NULL: overview) */
+
 /* sgb.c */
+uint8_t *sgb_build(const Stimulus *s, double fs, uint64_t mseed, const char *canon,
+                   const char *trial_json, const char *protocol_text, size_t *len);
 void write_sgb(const char *path, const Stimulus *s, double fs,
                uint64_t mseed, const char *canon,
                const char *trial_json, const char *protocol_text);

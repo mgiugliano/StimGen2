@@ -76,17 +76,17 @@ static void put_le64(uint8_t *p, uint64_t v)
     for (i = 0; i < 8; i++) p[i] = (uint8_t)(v >> (8 * i));
 }
 
-void write_sgb(const char *path, const Stimulus *s, double fs, uint64_t mseed, const char *canon,
-               const char *trial_json, const char *protocol_text)
+/* The complete .sgb file in memory (spec Table 15.1); *len is its size. */
+uint8_t *sgb_build(const Stimulus *s, double fs, uint64_t mseed, const char *canon,
+                   const char *trial_json, const char *protocol_text, size_t *len)
 {
     int64_t N = s->ch[0].n, k;
     size_t nbytes = (size_t)(8 * N * s->nch);
-    uint8_t *data = xmalloc(nbytes ? nbytes : 1), head[16];
+    uint8_t *data = xmalloc(nbytes ? nbytes : 1), *file;
     char hex[65], t[128];
     Str h = { NULL, 0, 0 };
     int i;
     time_t now = time(NULL);
-    FILE *f;
 
     for (i = 0; i < s->nch; i++)                       /* sample blocks   */
         for (k = 0; k < N; k++) {
@@ -138,14 +138,26 @@ void write_sgb(const char *path, const Stimulus *s, double fs, uint64_t mseed, c
     add(&h, "], \"clipping\": null, \"timestamp\": \""); add(&h, t); add(&h, "\"}}\n");
     while ((16 + h.n) % 8) add(&h, " ");    /* samples start on an 8-byte boundary */
 
-    memcpy(head, "SGB\0\0\0\0\0", 8);
-    put_le64(head + 8, (uint64_t)h.n);
-    f = fopen(path, "wb");
-    if (!f) die("cannot write '%s'", path);
-    if (fwrite(head, 1, 16, f) != 16 || fwrite(h.s, 1, h.n, f) != h.n ||
-        fwrite(data, 1, nbytes, f) != nbytes) die("error writing '%s'", path);
-    fclose(f);
+    *len = 16 + h.n + nbytes;
+    file = xmalloc(*len);
+    memcpy(file, "SGB\0\0\0\0\0", 8);
+    put_le64(file + 8, (uint64_t)h.n);
+    memcpy(file + 16, h.s, h.n);
+    memcpy(file + 16 + h.n, data, nbytes);
     free(data); free(h.s);
+    return file;
+}
+
+void write_sgb(const char *path, const Stimulus *s, double fs, uint64_t mseed, const char *canon,
+               const char *trial_json, const char *protocol_text)
+{
+    size_t len;
+    uint8_t *file = sgb_build(s, fs, mseed, canon, trial_json, protocol_text, &len);
+    FILE *f = fopen(path, "wb");
+    if (!f) die("cannot write '%s'", path);
+    if (fwrite(file, 1, len, f) != len) die("error writing '%s'", path);
+    fclose(f);
+    free(file);
 }
 
 /* Plain text: one row per sample, time then one column per channel. */

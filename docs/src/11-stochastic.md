@@ -149,10 +149,17 @@ define two levels.
   is required for the words of every stream and for the uniform variates
   derived from them. It extends to all samples when the implementation uses
   correctly rounded elementary functions.
-- **Level B (numerically equivalent).** Every sample differs from the
-  Level A result by at most a few units in the last place, relative to the
-  amplitude scale of its segment. Conforming implementations MUST reach at
-  least Level B, and MUST state which level they reach.
+- **Level B (numerically equivalent).** Every elementary function may
+  return a result that differs from the correctly rounded one by a few units
+  in the last place, and every sample differs from the Level A result only
+  by the effect of these differences through the formula of its generator.
+  For most generators this is a few units in the last place relative to the
+  amplitude scale of the segment. Where the formula is ill-conditioned it
+  can be more: a sinusoid or chirp whose phase argument has grown to tens of
+  radians inherits a few units in the last place *of the phase*, which is
+  tens of units in the last place of the output (about $10^{-14}$ of the
+  amplitude after 10 s of a chirp to 40 Hz). Conforming implementations MUST
+  reach at least Level B, and MUST state which level they reach.
 
 Rounding differences do not accumulate in recursive generators: in the OU
 update @eq:ou-exact, an error is multiplied by $\rho < 1$ at every step.
