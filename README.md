@@ -30,11 +30,24 @@ an AI-generated debate on keeping stimuli as text
 </tr>
 </table>
 
-[![StimGen 2 on one page: the three layers, generators, the .sgb format, the workflow and common pitfalls](docs/figures/stimgen2-overview-web.jpg)](docs/figures/StimGen_2_Electrophysiology_Toolset_Overview.png)
+<table>
+<tr>
+<td align="center" width="50%">
+<a href="docs/figures/StimGen_2_Overview_Infographic.png"><img src="docs/figures/stimgen2-infographic-web.jpg" alt="StimGen 2 at a glance: three layers, rate-independent waveforms, reproducible noise, sgconvert" width="100%"></a><br>
+<b>At a glance</b>
+</td>
+<td align="center" width="50%">
+<a href="docs/figures/StimGen_2_Electrophysiology_Toolset_Overview.png"><img src="docs/figures/stimgen2-overview-web.jpg" alt="StimGen 2 on one page: the three layers, generators, the .sgb format, the workflow and common pitfalls" width="100%"></a><br>
+<b>On one page, in more detail</b>
+</td>
+</tr>
+</table>
 
-*StimGen 2 on one page (AI-generated; click for full resolution). It is a
-visual summary, not a reference: [the TL;DR paper](docs/build/stimgen2-tldr.pdf)
-and the specification are authoritative.*
+*Two AI-generated infographics (click for full resolution). They are visual
+summaries, not references, and simplify some details: noise, for example, is
+identical across systems up to the last bits of `sin`, `exp` and `log`
+("Level B"). The [TL;DR paper](docs/build/stimgen2-tldr.pdf) and the
+specification are authoritative.*
 
 For a written introduction, read the five-page
 [TL;DR](docs/build/stimgen2-tldr.pdf) first, then try the
