@@ -13,6 +13,33 @@ as it is thought of:
 and `sg` turns it into samples in a portable binary file (`.sgb`), with a
 record that allows every stimulus to be regenerated exactly.
 
+## The idea in a few minutes
+
+<table>
+<tr>
+<td align="center" width="50%">
+<a href="https://youtu.be/-y39auwEhq8"><img src="docs/figures/video-explainer.jpg" alt="StimGen 2 explainer video on YouTube" width="100%"></a><br>
+<b><a href="https://youtu.be/-y39auwEhq8">StimGen 2: explainer</a></b><br>
+the three layers, the files and the tools
+</td>
+<td align="center" width="50%">
+<a href="https://youtu.be/rblChkcz0KA"><img src="docs/figures/video-debate.jpg" alt="Text versus binary in StimGen 2, an AI-generated debate on YouTube" width="100%"></a><br>
+<b><a href="https://youtu.be/rblChkcz0KA">Text versus binary in StimGen 2</a></b><br>
+an AI-generated debate on keeping stimuli as text
+</td>
+</tr>
+</table>
+
+[![StimGen 2 on one page: the three layers, generators, the .sgb format, the workflow and common pitfalls](docs/figures/stimgen2-overview-web.jpg)](docs/figures/StimGen_2_Electrophysiology_Toolset_Overview.png)
+
+*StimGen 2 on one page (AI-generated; click for full resolution). It is a
+visual summary, not a reference: [the TL;DR paper](docs/build/stimgen2-tldr.pdf)
+and the specification are authoritative.*
+
+For a written introduction, read the five-page
+[TL;DR](docs/build/stimgen2-tldr.pdf) first, then try the
+[planner](https://blog.giugliano.info/StimGen2/) in your browser.
+
 | Path | Content |
 |:--|:--|
 | `docs/tldr/` | **start here**: a five-page overview, the problem, the idea, two examples (`docs/build/stimgen2-tldr.pdf`) |
