@@ -24,6 +24,7 @@
 // driven through the DevTools protocol (no extra packages; Node >= 22).
 //
 //   node tests/test_web.mjs ./src/sg [screenshot-directory]
+//   SG_WEB_URL=https://blog.giugliano.info/StimGen2/ node tests/test_web.mjs ./src/sg
 //
 // Serves web/ on a local port, loads every example of the planner, checks
 // that each renders (status "ok", one plot per channel), that errors point
@@ -53,7 +54,8 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(f).pipe(res);
 });
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
-const URL0 = `http://127.0.0.1:${server.address().port}/index.html`;
+// SG_WEB_URL tests a published copy instead (e.g. the GitHub Pages site)
+const URL0 = process.env.SG_WEB_URL || `http://127.0.0.1:${server.address().port}/index.html`;
 
 // --- headless Chrome with a throwaway profile
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), "sgweb"));
